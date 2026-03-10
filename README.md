@@ -1,1 +1,1 @@
-# E-Commerce Portfolio Project
+# ShopSphere — Premium Full-Stack E-Commerce Portfolio
