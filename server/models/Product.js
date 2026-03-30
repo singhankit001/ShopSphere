@@ -15,11 +15,13 @@ const productSchema = new mongoose.Schema(
       type: Number,
       required: true,
       min: 0,
+      index: true,
     },
     category: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Category',
       required: true,
+      index: true,
     },
     stock: {
       type: Number,
@@ -27,45 +29,32 @@ const productSchema = new mongoose.Schema(
       min: 0,
       default: 0,
     },
-    images: [
-      {
-        url: { type: String, required: true },
-        public_id: { type: String, required: true },
-      },
-    ],
-    brand: {
+    image: {
       type: String,
       required: true,
     },
-    ratings: {
+    discountPrice: {
+      type: Number,
+      min: 0,
+    },
+    deliveryTime: {
+      type: String,
+      default: '15 min',
+    },
+    brand: {
+      type: String,
+      required: true,
+      index: true,
+    },
+    weight: {
+      type: String,
+      required: true,
+    },
+    rating: {
       type: Number,
       default: 0,
+      index: true,
     },
-    numOfReviews: {
-      type: Number,
-      default: 0,
-    },
-    reviews: [
-      {
-        user: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: 'User',
-          required: true,
-        },
-        name: {
-          type: String,
-          required: true,
-        },
-        rating: {
-          type: Number,
-          required: true,
-        },
-        comment: {
-          type: String,
-          required: true,
-        },
-      },
-    ],
   },
   { timestamps: true }
 );

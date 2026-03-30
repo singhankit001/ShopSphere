@@ -29,6 +29,19 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: '',
     },
+    phone: {
+      type: String,
+      trim: true,
+    },
+    addresses: [
+      {
+        street: String,
+        city: String,
+        state: String,
+        zipCode: String,
+        isDefault: { type: Boolean, default: false },
+      },
+    ],
     wishlist: [
       {
         type: mongoose.Schema.Types.ObjectId,
