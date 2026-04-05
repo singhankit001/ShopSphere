@@ -37,7 +37,8 @@ exports.login = async (req, res) => {
     
     const isMatch = await user.comparePassword(password);
     if (!isMatch) return res.status(401).json({ message: 'Invalid credentials' });
-    
+
+
     res.json({
       _id: user._id,
       name: user.name,
@@ -45,6 +46,8 @@ exports.login = async (req, res) => {
       role: user.role,
       token: generateToken(user._id),
     });
+    
+    
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
