@@ -1,1 +1,1 @@
-# ShopSphere — Premium Full-Stack E-Commerce Portfolio
+# ShopSphere — Full-Stack E-Commerce Portfolio
