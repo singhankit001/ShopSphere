@@ -80,7 +80,7 @@ const ProductDetails = () => {
     if (newQty === 0) {
       dispatch(removeFromCart(productId));
     } else {
-      dispatch(updateCartQuantity({ id: product._id, quantity: newQty }));
+      dispatch(updateCartQuantity({ id: productId, quantity: newQty }));
     }
   };
 
