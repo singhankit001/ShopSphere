@@ -131,19 +131,26 @@ const CartDrawer = ({ isOpen, onClose }) => {
                             
                             <div className="flex items-center bg-[#0F172A] text-white rounded-xl h-9 px-1 shadow-lg">
                               <button 
-                                onClick={() => item.quantity > 1 ? dispatch(updateCartQuantity({ id: item._id, quantity: item.quantity - 1 })) : dispatch(removeFromCart(item._id))}
+                                onClick={() => {
+                                  const id = item._id || item.id;
+                                  if (item.quantity > 1) {
+                                    dispatch(updateCartQuantity({ id, quantity: item.quantity - 1 }));
+                                  } else {
+                                    dispatch(removeFromCart(id));
+                                  }
+                                }}
                                 className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg transition-all"
                               ><Minus className="w-3.5 h-3.5" /></button>
                               <span className="w-6 text-center font-black text-xs">{item.quantity}</span>
                               <button 
-                                onClick={() => dispatch(updateCartQuantity({ id: item._id, quantity: item.quantity + 1 }))}
+                                onClick={() => dispatch(updateCartQuantity({ id: item._id || item.id, quantity: item.quantity + 1 }))}
                                 className="w-8 h-8 flex items-center justify-center hover:bg-white/10 rounded-lg transition-all"
                               ><Plus className="w-3.5 h-3.5" /></button>
                             </div>
                           </div>
                         </div>
                         <button 
-                          onClick={() => dispatch(removeFromCart(item._id))}
+                          onClick={() => dispatch(removeFromCart(item._id || item.id))}
                           className="absolute top-4 right-4 text-slate-300 hover:text-rose-500 transition-colors p-1"
                         >
                           <X className="w-4 h-4" />

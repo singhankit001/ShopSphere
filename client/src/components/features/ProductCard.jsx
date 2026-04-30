@@ -28,7 +28,7 @@ const ProductCard = ({ product }) => {
     e.preventDefault();
     e.stopPropagation();
     if (newQty === 0) {
-      dispatch(removeFromCart(product._id));
+      dispatch(removeFromCart(productId));
     } else {
       dispatch(updateCartQuantity({ id: product._id, quantity: newQty }));
     }

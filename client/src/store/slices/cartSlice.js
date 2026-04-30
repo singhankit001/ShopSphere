@@ -39,16 +39,17 @@ const cartSlice = createSlice({
       saveCartToStorage(state.items);
     },
     removeFromCart: (state, action) => {
-      state.items = state.items.filter(i => i._id !== action.payload);
+      const productId = action.payload;
+      state.items = state.items.filter(i => (i._id || i.id) !== productId);
       saveCartToStorage(state.items);
     },
     updateCartQuantity: (state, action) => {
       const { id, quantity } = action.payload;
-      const item = state.items.find(i => i._id === id);
+      const item = state.items.find(i => (i._id || i.id) === id);
       if (item) {
         item.quantity = Math.max(0, quantity);
         if (item.quantity === 0) {
-          state.items = state.items.filter(i => i._id !== id);
+          state.items = state.items.filter(i => (i._id || i.id) !== id);
         }
       }
       saveCartToStorage(state.items);
