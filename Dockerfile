@@ -16,7 +16,7 @@ WORKDIR /app/client
 COPY client/package.json client/package-lock.json ./
 
 # Install all dependencies (devDeps needed for Vite build)
-RUN npm ci --frozen-lockfile
+RUN npm ci --frozen-lockfile --legacy-peer-deps
 
 # Copy the rest of the client source
 COPY client/ ./
