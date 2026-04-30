@@ -106,9 +106,124 @@ npm run dev
 
 ---
 
-## 🐳 Docker — Local Development
+## 🐳 Docker — Build & Run
 
-Build and run the full stack locally using Docker Compose.
+```bash
+# Build the production image (from project root)
+docker build -t shopsphere:latest .
+
+# Run locally
+docker run -p 8080:80 shopsphere:latest
+# Visit: http://localhost:8080
+# Health: http://localhost:8080/health
+
+# Full stack (with backend) via Docker Compose
+docker compose up --build
+docker compose down
+```
+
+---
+
+## ☁️ AWS Infrastructure Setup
+
+**Prerequisites:** AWS CLI v2 installed + configured (`aws configure`)
+
+```bash
+# Edit subnet and security group IDs inside the script first
+chmod +x scripts/aws-setup.sh
+./scripts/aws-setup.sh
+```
+
+This creates:
+- ECR repository: `shopsphere`
+- CloudWatch log group: `/ecs/shopsphere` (30-day retention)
+- ECS Fargate cluster: `shopsphere-cluster` (Container Insights on)
+- IAM task execution role: `ecsTaskExecutionRole`
+- ECS task definition: `shopsphere-task`
+- ECS service: `shopsphere-service`
+
+---
+
+## 🔐 GitHub Actions Secrets
+
+`Settings → Secrets and variables → Actions → New repository secret`
+
+| Secret | Value |
+|---|---|
+| `AWS_ACCESS_KEY_ID` | IAM access key |
+| `AWS_SECRET_ACCESS_KEY` | IAM secret key |
+| `AWS_REGION` | e.g. `ap-south-1` |
+| `ECR_REPOSITORY` | `shopsphere` |
+| `ECS_CLUSTER` | `shopsphere-cluster` |
+| `ECS_SERVICE` | `shopsphere-service` |
+| `ECS_TASK_DEFINITION` | `.aws/task-definition.json` |
+| `CONTAINER_NAME` | `shopsphere` |
+
+---
+
+## 🚀 CI/CD Pipeline — Deployment Flow
+
+```
+git push origin main
+        │
+        ▼
+ GitHub Actions triggered (.github/workflows/deploy.yml)
+        │
+        ├── [1] Checkout code
+        ├── [2] Configure AWS credentials (from Secrets)
+        ├── [3] Login to Amazon ECR
+        ├── [4] Generate tags: latest + <7-char commit SHA>
+        ├── [5] docker build . -t <ECR>:latest -t <ECR>:<sha>
+        ├── [6] docker push (both tags)
+        ├── [7] Verify image exists in ECR
+        ├── [8] Render task definition with new image URI
+        ├── [9] Deploy to ECS Fargate (waits for stability)
+        └── [10] Verify rollout state + print CloudWatch URL
+```
+
+✅ **Zero manual steps.** Every `git push` to `main` automatically builds, pushes, and deploys.
+
+---
+
+## 📊 CloudWatch Logs
+
+Container logs stream to:
+
+| Log Group | Retention |
+|---|---|
+| `/ecs/shopsphere` | 30 days |
+
+**View logs:**
+```
+AWS Console → CloudWatch → Log groups → /ecs/shopsphere
+```
+
+---
+
+## 💚 Health Checks
+
+| Check | Command | Interval | Retries |
+|---|---|---|---|
+| Docker | `wget -qO- http://localhost/health` | 30s | 3 |
+| ECS | Same (via task definition `healthCheck`) | 30s | 3 |
+
+ECS automatically replaces failed tasks after 3 consecutive health check failures.
+
+---
+
+## 🏷️ Image Tagging Strategy
+
+| Tag | Meaning |
+|---|---|
+| `latest` | Most recent successful build |
+| `a1b2c3d` | Immutable 7-char commit SHA |
+
+Rollback: `aws ecs update-service --task-definition shopsphere-task:<previous-revision>`
+
+---
+
+**Built with attention to usability, performance, and real-world scalability.**
+
 
 ```bash
 # Build both images and start the stack
