@@ -247,7 +247,7 @@ const Navbar = ({ onOpenCart }) => {
               <div className="relative">
                 <ShoppingBasket className="w-[24px] h-[24px]" />
                 {itemsCount > 0 && (
-                  <span className="absolute -top-[12px] -right-[12px] w-[20px] h-[20px] bg-white text-[#10B981] text-[10px] flex items-center justify-center rounded-full font-black border-2 border-[#10B981] animate-in zoom-in">
+                  <span className="absolute -top-[12px] -right-[12px] w-[22px] h-[22px] bg-white text-[#10B981] text-[12px] flex items-center justify-center rounded-full font-black border-2 border-[#10B981] animate-in zoom-in shadow-sm">
                     {itemsCount}
                   </span>
                 )}

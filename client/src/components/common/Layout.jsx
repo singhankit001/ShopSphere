@@ -42,7 +42,7 @@ const Layout = ({ children }) => {
                 
                 <div className="flex items-center gap-4 relative z-10 pl-4">
                    <div className="flex flex-col items-start leading-tight">
-                      <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{itemsCount} Item{itemsCount > 1 ? 's' : ''}</p>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">{itemsCount} Item{itemsCount > 1 ? 's' : ''}</p>
                       <p className="text-xl font-black tracking-tight">₹{subtotal}</p>
                    </div>
                 </div>

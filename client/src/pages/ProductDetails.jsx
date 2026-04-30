@@ -205,8 +205,8 @@ const ProductDetails = () => {
                           className="w-14 h-full flex items-center justify-center hover:bg-white/10 transition-colors"
                          ><Minus className="w-5 h-5" /></button>
                          <div className="text-center">
-                            <span className="block font-bold text-sm leading-none">{quantity}</span>
-                            <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">In Basket</span>
+                            <span className="block font-black text-xl leading-none">{quantity}</span>
+                            <span className="text-[10px] font-black text-white/70 uppercase tracking-widest">In Basket</span>
                          </div>
                          <button 
                           onClick={() => handleUpdateQuantity(quantity + 1)}
