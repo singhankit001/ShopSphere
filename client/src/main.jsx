@@ -7,6 +7,7 @@ import axios from 'axios';
 import './index.css'
 import App from './App.jsx'
 import ErrorBoundary from './components/common/ErrorBoundary';
+import { GoogleOAuthProvider } from '@react-oauth/google';
 
 axios.defaults.timeout = 10000; // 10s timeout
 
@@ -31,19 +32,28 @@ axios.interceptors.request.use((config) => {
   return config;
 });
 
-import { GoogleOAuthProvider } from '@react-oauth/google';
+// Only initialize Google OAuth if a real client ID is provided.
+// Using a placeholder causes the app to crash entirely on startup.
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || '';
+const hasRealGoogleAuth = GOOGLE_CLIENT_ID.length > 10 && !GOOGLE_CLIENT_ID.startsWith('YOUR_');
 
-const GOOGLE_CLIENT_ID = "YOUR_GOOGLE_CLIENT_ID.apps.googleusercontent.com"; // User will replace this
+const AppCore = () => (
+  <Provider store={store}>
+    <App />
+    <Toaster />
+  </Provider>
+);
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <ErrorBoundary>
-        <Provider store={store}>
-          <App />
-          <Toaster />
-        </Provider>
-      </ErrorBoundary>
-    </GoogleOAuthProvider>
-  </StrictMode>,
-)
+    <ErrorBoundary>
+      {hasRealGoogleAuth ? (
+        <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+          <AppCore />
+        </GoogleOAuthProvider>
+      ) : (
+        <AppCore />
+      )}
+    </ErrorBoundary>
+  </StrictMode>
+);
