@@ -1,20 +1,7 @@
 #!/bin/bash
-# ═══════════════════════════════════════════════════════════════════════════
-# ShopSphere — AWS Infrastructure Bootstrap
-# Creates: ECR repo, CloudWatch log group, IAM role, ECS cluster, task def, service
-#
-# Usage:
-#   chmod +x scripts/aws-setup.sh
-#   ./scripts/aws-setup.sh
-#
-# Prerequisites:
-#   AWS CLI v2 installed + configured (aws configure)
-#   IAM permissions: ecr:*, ecs:*, iam:*, logs:*, sts:GetCallerIdentity
-# ═══════════════════════════════════════════════════════════════════════════
 
 set -euo pipefail
 
-# ── Configuration ─────────────────────────────────────────────────────────
 AWS_REGION="${AWS_REGION:-ap-south-1}"
 ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
 REPO_NAME="shopsphere"
@@ -24,34 +11,26 @@ TASK_FAMILY="shopsphere-task"
 CONTAINER_NAME="shopsphere"
 LOG_GROUP="/ecs/shopsphere"
 
-# VPC networking — EDIT THESE before running (get from AWS Console → VPC)
 SUBNET_ID_1="${SUBNET_ID_1:-subnet-REPLACE_ME}"
 SUBNET_ID_2="${SUBNET_ID_2:-subnet-REPLACE_ME}"
 SECURITY_GROUP_ID="${SECURITY_GROUP_ID:-sg-REPLACE_ME}"
 
 ECR_URI="${ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPO_NAME}"
 
-echo ""
-echo "══════════════════════════════════════════════════════════"
-echo "  ShopSphere AWS Infrastructure Bootstrap"
-echo "  Account : ${ACCOUNT_ID}"
-echo "  Region  : ${AWS_REGION}"
-echo "  ECR URI : ${ECR_URI}"
-echo "══════════════════════════════════════════════════════════"
+echo "Starting AWS Infrastructure Bootstrap..."
+echo "Account: ${ACCOUNT_ID}"
+echo "Region: ${AWS_REGION}"
+echo "ECR URI: ${ECR_URI}"
 
-# ── Step 1: Create ECR Repository ─────────────────────────────────────────
-echo ""
-echo "▶ [1/6] Creating ECR repository: ${REPO_NAME}"
-
+echo "Creating ECR repository: ${REPO_NAME}..."
 aws ecr create-repository \
   --repository-name "${REPO_NAME}" \
   --region "${AWS_REGION}" \
   --image-scanning-configuration scanOnPush=true \
   --image-tag-mutability MUTABLE 2>/dev/null \
-  && echo "  ✅ ECR repository created." \
-  || echo "  ℹ️  ECR repository already exists — skipping."
+  && echo "ECR repository created." \
+  || echo "ECR repository already exists."
 
-# Lifecycle policy: keep 10 tagged images, expire untagged after 1 day
 aws ecr put-lifecycle-policy \
   --repository-name "${REPO_NAME}" \
   --region "${AWS_REGION}" \
@@ -82,29 +61,23 @@ aws ecr put-lifecycle-policy \
     ]
   }' > /dev/null
 
-echo "  ✅ Lifecycle policy applied."
+echo "Lifecycle policy applied."
 
-# ── Step 2: Create CloudWatch Log Group ───────────────────────────────────
-echo ""
-echo "▶ [2/6] Creating CloudWatch log group: ${LOG_GROUP}"
-
+echo "Creating CloudWatch log group: ${LOG_GROUP}..."
 aws logs create-log-group \
   --log-group-name "${LOG_GROUP}" \
   --region "${AWS_REGION}" 2>/dev/null \
-  && echo "  ✅ Log group created." \
-  || echo "  ℹ️  Log group already exists — skipping."
+  && echo "Log group created." \
+  || echo "Log group already exists."
 
 aws logs put-retention-policy \
   --log-group-name "${LOG_GROUP}" \
   --retention-in-days 30 \
   --region "${AWS_REGION}"
 
-echo "  ✅ Retention set to 30 days."
+echo "Retention set to 30 days."
 
-# ── Step 3: Create ECS Task Execution IAM Role ────────────────────────────
-echo ""
-echo "▶ [3/6] Creating IAM task execution role: ecsTaskExecutionRole"
-
+echo "Creating IAM task execution role: ecsTaskExecutionRole..."
 TRUST_POLICY='{
   "Version": "2012-10-17",
   "Statement": [{
@@ -117,8 +90,8 @@ TRUST_POLICY='{
 aws iam create-role \
   --role-name ecsTaskExecutionRole \
   --assume-role-policy-document "${TRUST_POLICY}" 2>/dev/null \
-  && echo "  ✅ IAM role created." \
-  || echo "  ℹ️  IAM role already exists — skipping."
+  && echo "IAM role created." \
+  || echo "IAM role already exists."
 
 aws iam attach-role-policy \
   --role-name ecsTaskExecutionRole \
@@ -130,12 +103,9 @@ aws iam attach-role-policy \
   --policy-arn arn:aws:iam::aws:policy/CloudWatchLogsFullAccess \
   2>/dev/null || true
 
-echo "  ✅ Policies attached."
+echo "Policies attached."
 
-# ── Step 4: Create ECS Cluster ────────────────────────────────────────────
-echo ""
-echo "▶ [4/6] Creating ECS cluster: ${CLUSTER_NAME}"
-
+echo "Creating ECS cluster: ${CLUSTER_NAME}..."
 aws ecs create-cluster \
   --cluster-name "${CLUSTER_NAME}" \
   --capacity-providers FARGATE FARGATE_SPOT \
@@ -143,13 +113,10 @@ aws ecs create-cluster \
       capacityProvider=FARGATE,weight=1 \
   --settings name=containerInsights,value=enabled \
   --region "${AWS_REGION}" 2>/dev/null \
-  && echo "  ✅ ECS cluster created (Container Insights enabled)." \
-  || echo "  ℹ️  ECS cluster already exists — skipping."
+  && echo "ECS cluster created." \
+  || echo "ECS cluster already exists."
 
-# ── Step 5: Register ECS Task Definition ──────────────────────────────────
-echo ""
-echo "▶ [5/6] Registering ECS task definition: ${TASK_FAMILY}"
-
+echo "Registering ECS task definition: ${TASK_FAMILY}..."
 TASK_DEFINITION=$(cat <<EOF
 {
   "family": "${TASK_FAMILY}",
@@ -202,15 +169,11 @@ aws ecs register-task-definition \
   --query 'taskDefinition.taskDefinitionArn' \
   --output text
 
-echo "  ✅ Task definition registered."
+echo "Task definition registered."
 
-# ── Step 6: Create ECS Service ────────────────────────────────────────────
-echo ""
-echo "▶ [6/6] Creating ECS service: ${SERVICE_NAME}"
-
+echo "Creating ECS service: ${SERVICE_NAME}..."
 if [[ "${SUBNET_ID_1}" == "subnet-REPLACE_ME" ]]; then
-  echo "  ⚠️  Skipping service creation — subnet IDs not configured."
-  echo "  Edit SUBNET_ID_1, SUBNET_ID_2, SECURITY_GROUP_ID at top of script."
+  echo "Skipping service creation - subnet IDs not configured."
 else
   aws ecs create-service \
     --cluster "${CLUSTER_NAME}" \
@@ -226,28 +189,8 @@ else
     --deployment-configuration "maximumPercent=200,minimumHealthyPercent=100" \
     --health-check-grace-period-seconds 30 \
     --region "${AWS_REGION}" 2>/dev/null \
-    && echo "  ✅ ECS service created." \
-    || echo "  ℹ️  ECS service already exists — skipping."
+    && echo "ECS service created." \
+    || echo "ECS service already exists."
 fi
 
-# ── Output: GitHub Secrets Reference ──────────────────────────────────────
-echo ""
-echo "══════════════════════════════════════════════════════════"
-echo "  GitHub Secrets — add these at:"
-echo "  https://github.com/singhankit001/ShopSphere/settings/secrets/actions"
-echo ""
-echo "  Secret Name            Value"
-echo "  ─────────────────────  ──────────────────────────────────"
-echo "  AWS_ACCESS_KEY_ID      <your IAM access key>"
-echo "  AWS_SECRET_ACCESS_KEY  <your IAM secret key>"
-echo "  AWS_REGION             ${AWS_REGION}"
-echo "  ECR_REPOSITORY         ${REPO_NAME}"
-echo "  ECS_CLUSTER            ${CLUSTER_NAME}"
-echo "  ECS_SERVICE            ${SERVICE_NAME}"
-echo "  ECS_TASK_DEFINITION    .aws/task-definition.json"
-echo "  CONTAINER_NAME         ${CONTAINER_NAME}"
-echo ""
-echo "  After adding secrets, push to main — pipeline runs automatically."
-echo "══════════════════════════════════════════════════════════"
-echo ""
-echo "✅ Bootstrap complete."
+echo "Bootstrap complete."
