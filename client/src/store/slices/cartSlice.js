@@ -24,11 +24,17 @@ const cartSlice = createSlice({
   },
   reducers: {
     addToCart: (state, action) => {
-      const existingItem = state.items.find(i => i._id === action.payload._id);
+      const productId = action.payload._id || action.payload.id;
+      if (!productId) {
+        console.error("Attempted to add product without ID", action.payload);
+        return;
+      }
+      
+      const existingItem = state.items.find(i => (i._id || i.id) === productId);
       if (existingItem) {
         existingItem.quantity += 1;
       } else {
-        state.items.push({ ...action.payload, quantity: 1 });
+        state.items.push({ ...action.payload, _id: productId, quantity: 1 });
       }
       saveCartToStorage(state.items);
     },

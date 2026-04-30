@@ -34,7 +34,8 @@ const ProductDetails = () => {
   };
   
   const { items } = useSelector((state) => state.cart);
-  const cartItem = items.find(item => item._id === id);
+  const productId = product?._id || product?.id || id;
+  const cartItem = items.find(item => (item._id || item.id) === productId);
   const quantity = cartItem ? cartItem.quantity : 0;
 
   useEffect(() => {

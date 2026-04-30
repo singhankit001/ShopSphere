@@ -34,7 +34,9 @@ const Home = () => {
           : [];
         const rawCategories = catRes.status === 'fulfilled' ? catRes.value.data : [];
 
-        const cleanFetchedProducts = fetchedProducts.filter(p => p.name && p.image);
+        const cleanFetchedProducts = fetchedProducts
+          .filter(p => p.name && p.image)
+          .map(p => ({ ...p, _id: p._id || p.id || `gen-${Math.random().toString(36).slice(2, 9)}` }));
 
         const uniqueCategoriesMap = new Map();
         fallbackCategories.forEach(cat => {

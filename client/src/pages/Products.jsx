@@ -103,7 +103,7 @@ const Products = () => {
         const rawProducts = Array.isArray(fetchedData.products) ? fetchedData.products : (Array.isArray(fetchedData) ? fetchedData : []);
         const normalizedProducts = rawProducts.map(p => ({
           ...p,
-          _id: p._id || p.id,
+          _id: p._id || p.id || `gen-${Math.random().toString(36).slice(2, 9)}`,
           categorySlug: p.categorySlug || (p.category && p.category.slug) || (typeof p.category === 'string' ? p.category : null)
         }));
         

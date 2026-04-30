@@ -10,7 +10,8 @@ const ProductCard = ({ product }) => {
   const dispatch = useDispatch();
   const { items } = useSelector((state) => state.cart);
   
-  const cartItem = items.find(item => item._id === product._id);
+  const productId = product._id || product.id;
+  const cartItem = productId ? items.find(item => (item._id || item.id) === productId) : null;
   const quantity = cartItem ? cartItem.quantity : 0;
   const API_URL = 'http://localhost:5001';
 
