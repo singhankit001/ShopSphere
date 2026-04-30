@@ -103,3 +103,157 @@ npm run dev
 ---
 
 **Built with attention to usability, performance, and real-world scalability.**
+
+---
+
+## 🐳 Docker — Local Development
+
+Build and run the full stack locally using Docker Compose.
+
+```bash
+# Build both images and start the stack
+docker compose up --build
+
+# Frontend available at: http://localhost
+# Backend API available at: http://localhost:5001/api/health
+
+# Run in detached mode
+docker compose up -d --build
+
+# Stop the stack
+docker compose down
+```
+
+**Build individual images:**
+
+```bash
+# Frontend (React → Nginx, multi-stage build)
+docker build -t shopsphere-frontend:local ./client
+
+# Backend (Node.js + Express)
+docker build -t shopsphere-backend:local ./server
+
+# Test frontend locally
+docker run -p 8080:80 shopsphere-frontend:local
+# Visit: http://localhost:8080
+```
+
+---
+
+## ☁️ AWS Infrastructure Setup
+
+**Prerequisites:**
+- AWS CLI v2 installed and configured
+- IAM user with ECR, ECS, CloudWatch, SecretsManager permissions
+
+**Run the bootstrap script once:**
+
+```bash
+# Make executable and run
+chmod +x scripts/aws-setup.sh
+AWS_REGION=ap-south-1 ./scripts/aws-setup.sh
+```
+
+This creates:
+- 2 ECR repositories (`shopsphere-frontend`, `shopsphere-backend`)
+- CloudWatch log groups with 30-day retention
+- ECS Fargate cluster with Container Insights
+- IAM task execution role
+- ECS task definitions and services
+
+---
+
+## 🔐 GitHub Actions Secrets
+
+Go to `Settings → Secrets and variables → Actions` and add:
+
+| Secret Name | Description |
+|---|---|
+| `AWS_ACCESS_KEY_ID` | IAM user access key |
+| `AWS_SECRET_ACCESS_KEY` | IAM user secret key |
+| `AWS_REGION` | e.g. `ap-south-1` |
+| `AWS_ACCOUNT_ID` | Your 12-digit AWS account ID |
+| `ECR_REPOSITORY_FRONTEND` | `shopsphere-frontend` |
+| `ECR_REPOSITORY_BACKEND` | `shopsphere-backend` |
+| `ECS_CLUSTER` | `shopsphere-cluster` |
+| `ECS_SERVICE_FRONTEND` | `shopsphere-frontend-service` |
+| `ECS_SERVICE_BACKEND` | `shopsphere-backend-service` |
+| `CONTAINER_NAME_FRONTEND` | `shopsphere-frontend` |
+| `CONTAINER_NAME_BACKEND` | `shopsphere-backend` |
+
+---
+
+## 🚀 CI/CD Deployment Pipeline
+
+**Flow:**
+
+```
+git push main
+     │
+     ▼
+GitHub Actions triggered
+     │
+     ├─── [Parallel] ──────────────────────────────────────┐
+     │    Build frontend image                              │
+     │    Tag: latest + commit SHA                         │
+     │    Push to ECR (shopsphere-frontend)                 │
+     │                                                      │
+     │                                                      ▼
+     │                                             Build backend image
+     │                                             Tag: latest + commit SHA
+     │                                             Push to ECR (shopsphere-backend)
+     │
+     ├─── [Sequential] ───────────────────────────────────
+     │    Render updated frontend task definition
+     │    Deploy to ECS (waits for stability)
+     │
+     ├─── [Sequential] ───────────────────────────────────
+     │    Render updated backend task definition
+     │    Deploy to ECS (waits for stability)
+     │
+     └─── Verify ECS rollout state
+          Print CloudWatch log links
+```
+
+Every `git push` to `main` triggers a **fully automated, zero-manual** deploy.
+
+---
+
+## 📊 CloudWatch Logs (Bonus)
+
+Container logs are automatically streamed to CloudWatch:
+
+| Service | Log Group |
+|---|---|
+| Frontend | `/ecs/shopsphere-frontend` |
+| Backend | `/ecs/shopsphere-backend` |
+
+Both groups have 30-day retention. Stream prefix: `ecs/`.
+
+---
+
+## 💚 Health Checks (Bonus)
+
+| Container | Endpoint | Interval | Retries |
+|---|---|---|---|
+| Frontend | `GET /health` | 30s | 3 |
+| Backend | `GET /api/health` | 30s | 3 |
+
+ECS automatically restarts unhealthy tasks after 3 consecutive failures.
+
+---
+
+## 🏷️ Image Tagging Strategy
+
+Each image is pushed with two tags:
+
+| Tag | Purpose |
+|---|---|
+| `latest` | Always points to the most recent build |
+| `<7-char SHA>` | Immutable reference to a specific commit |
+
+Example: `123456789.dkr.ecr.ap-south-1.amazonaws.com/shopsphere-frontend:a1b2c3d`
+
+---
+
+**Built with attention to usability, performance, and real-world scalability.**
