@@ -1,4 +1,4 @@
-name: ShopSphere Deploy to Amazon ECS
+name: Deploy to Amazon ECS
 
 on:
   push:
@@ -12,7 +12,6 @@ concurrency:
 
 permissions:
   contents: read
-  id-token: write
 
 env:
   AWS_REGION:      ${{ secrets.AWS_REGION }}
@@ -23,7 +22,7 @@ env:
 
 jobs:
   deploy:
-    name: Build, Push ECR, Deploy ECS
+    name: Build and Deploy
     runs-on: ubuntu-latest
 
     steps:
@@ -47,20 +46,17 @@ jobs:
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "image_uri=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
-          echo "::notice title=Image Tags::latest + ${SHORT_SHA}"
 
       - name: Build Docker image
         env:
           REGISTRY:  ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ steps.tags.outputs.short_sha }}
         run: |
-          echo "Building image: $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           docker build \
             --file Dockerfile \
             --tag  $REGISTRY/$ECR_REPOSITORY:latest \
             --tag  $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            --label "org.opencontainers.image.revision=${{ github.sha }}" \
-            --label "org.opencontainers.image.source=${{ github.repositoryUrl }}" \
+            --label "revision=${{ github.sha }}" \
             .
 
       - name: Push image to Amazon ECR
@@ -70,19 +66,6 @@ jobs:
         run: |
           docker push $REGISTRY/$ECR_REPOSITORY:latest
           docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-          echo "Pushed: $REGISTRY/$ECR_REPOSITORY:latest"
-          echo "Pushed: $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
-
-      - name: Verify ECR image exists
-        env:
-          IMAGE_TAG: ${{ steps.tags.outputs.short_sha }}
-        run: |
-          aws ecr describe-images \
-            --repository-name $ECR_REPOSITORY \
-            --image-ids imageTag=$IMAGE_TAG \
-            --region $AWS_REGION \
-            --query 'imageDetails[0].{digest:imageDigest,pushed:imagePushedAt,size:imageSizeInBytes}' \
-            --output table
 
       - name: Render ECS task definition
         id: render-task-def
@@ -109,28 +92,9 @@ jobs:
             --query    'services[0].deployments[0].rolloutState' \
             --output   text)
 
-          RUNNING=$(aws ecs describe-services \
-            --cluster  $ECS_CLUSTER \
-            --services $ECS_SERVICE \
-            --query    'services[0].runningCount' \
-            --output   text)
-
-          echo ""
-          echo "Deployment Complete"
-          echo "Cluster: $ECS_CLUSTER"
-          echo "Service: $ECS_SERVICE"
-          echo "Image: ${{ steps.tags.outputs.image_uri }}"
-          echo "Rollout: $STATE"
-          echo "Running: $RUNNING task(s)"
-          echo "Commit: ${{ github.sha }}"
-          echo "Actor: ${{ github.actor }}"
-          echo ""
-          echo "CloudWatch Logs:"
-          echo "https://console.aws.amazon.com/cloudwatch/home?region=${AWS_REGION}#logsV2:log-groups/log-group/%2Fecs%2Fshopsphere"
-          echo ""
-
           if [ "$STATE" != "COMPLETED" ]; then
-            echo "Warning: Rollout state is '$STATE' - tasks may still be stabilising."
+            echo "Deployment state is '$STATE' - tasks may still be stabilising."
+            exit 1
           else
             echo "Deployment fully COMPLETED. App is live."
           fi
