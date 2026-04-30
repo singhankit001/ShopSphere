@@ -2,7 +2,7 @@ import React, { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Layout from './components/common/Layout';
 import { Toaster } from 'react-hot-toast';
-import ErrorBoundary from './components/ui/ErrorBoundary';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import ScrollToTop from './components/ui/ScrollToTop';
 import { Careers, Blog, Press, 
   HelpCenter, Safety, Privacy, Terms, Contact 
