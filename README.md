@@ -56,13 +56,12 @@ ShopSphere uses a modular, feature-first structure to ensure maintainability as 
 ```text
 src/
 ├── assets/      # Optimized branding and icons
-├── components/  # Atomic UI primitives (Layout, Shared)
+├── components/  # Atomic design: /ui, /common, /features
 ├── data/        # Static catalog and fallback datasets
-├── features/    # Domain-specific logic (Cart, Products)
+├── store/       # Redux Toolkit state management
 ├── hooks/       # Custom React lifecycle logic
-├── services/    # API and storage abstraction layer
-├── styles/      # Global themes and design tokens
-└── utils/       # Formatting and validation helpers
+├── utils/       # Formatting and validation helpers
+└── constants/   # Global configurations and constants
 ```
 
 ---
