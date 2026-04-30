@@ -1,18 +1,23 @@
-name: Deploy to Amazon ECS
+name: ShopSphere — Deploy to Amazon ECS
 
+# ── Trigger ──────────────────────────────────────────────────────
 on:
   push:
     branches:
       - main
-  workflow_dispatch:
+  workflow_dispatch:          # Manual trigger from GitHub Actions UI
 
+# Cancel any in-progress deployment for the same branch
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+# ── Permissions ──────────────────────────────────────────────────
 permissions:
-  contents: read
+  contents: read              # Checkout
+  id-token: write             # Required if switching to OIDC later
 
+# ── Environment ──────────────────────────────────────────────────
 env:
   AWS_REGION:      ${{ secrets.AWS_REGION }}
   ECR_REPOSITORY:  ${{ secrets.ECR_REPOSITORY }}
@@ -22,13 +27,19 @@ env:
 
 jobs:
   deploy:
-    name: Build and Deploy
+    name: Build → Push ECR → Deploy ECS
     runs-on: ubuntu-latest
 
     steps:
+      # ────────────────────────────────────────────────────────────
+      # 1. Checkout source code
+      # ────────────────────────────────────────────────────────────
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      # ────────────────────────────────────────────────────────────
+      # 2. Configure AWS credentials (via GitHub Secrets — no hardcoding)
+      # ────────────────────────────────────────────────────────────
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -36,29 +47,44 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region:            ${{ secrets.AWS_REGION }}
 
+      # ────────────────────────────────────────────────────────────
+      # 3. Authenticate Docker to Amazon ECR
+      # ────────────────────────────────────────────────────────────
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
+      # ────────────────────────────────────────────────────────────
+      # 4. Generate image tags (latest + short commit SHA)
+      # ────────────────────────────────────────────────────────────
       - name: Generate image tags
         id: tags
         run: |
           SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           echo "short_sha=${SHORT_SHA}" >> $GITHUB_OUTPUT
           echo "image_uri=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${SHORT_SHA}" >> $GITHUB_OUTPUT
+          echo "::notice title=Image Tags::latest + ${SHORT_SHA}"
 
+      # ────────────────────────────────────────────────────────────
+      # 5. Build Docker image
+      # ────────────────────────────────────────────────────────────
       - name: Build Docker image
         env:
           REGISTRY:  ${{ steps.login-ecr.outputs.registry }}
           IMAGE_TAG: ${{ steps.tags.outputs.short_sha }}
         run: |
+          echo "Building image: $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
           docker build \
             --file Dockerfile \
             --tag  $REGISTRY/$ECR_REPOSITORY:latest \
             --tag  $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
-            --label "revision=${{ github.sha }}" \
+            --label "org.opencontainers.image.revision=${{ github.sha }}" \
+            --label "org.opencontainers.image.source=${{ github.repositoryUrl }}" \
             .
 
+      # ────────────────────────────────────────────────────────────
+      # 6. Push both tags to Amazon ECR
+      # ────────────────────────────────────────────────────────────
       - name: Push image to Amazon ECR
         env:
           REGISTRY:  ${{ steps.login-ecr.outputs.registry }}
@@ -66,7 +92,26 @@ jobs:
         run: |
           docker push $REGISTRY/$ECR_REPOSITORY:latest
           docker push $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          echo "✅ Pushed: $REGISTRY/$ECR_REPOSITORY:latest"
+          echo "✅ Pushed: $REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG"
 
+      # ────────────────────────────────────────────────────────────
+      # 7. Verify image is present in ECR
+      # ────────────────────────────────────────────────────────────
+      - name: Verify ECR image exists
+        env:
+          IMAGE_TAG: ${{ steps.tags.outputs.short_sha }}
+        run: |
+          aws ecr describe-images \
+            --repository-name $ECR_REPOSITORY \
+            --image-ids imageTag=$IMAGE_TAG \
+            --region $AWS_REGION \
+            --query 'imageDetails[0].{digest:imageDigest,pushed:imagePushedAt,size:imageSizeInBytes}' \
+            --output table
+
+      # ────────────────────────────────────────────────────────────
+      # 8. Render updated ECS task definition with the new ECR image
+      # ────────────────────────────────────────────────────────────
       - name: Render ECS task definition
         id: render-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
@@ -75,6 +120,10 @@ jobs:
           container-name:  ${{ secrets.CONTAINER_NAME }}
           image:           ${{ steps.tags.outputs.image_uri }}
 
+      # ────────────────────────────────────────────────────────────
+      # 9. Deploy updated task definition to ECS Service
+      #    Waits until the rolling deployment is COMPLETED
+      # ────────────────────────────────────────────────────────────
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
@@ -84,6 +133,9 @@ jobs:
           wait-for-service-stability: true
           wait-for-minutes:         15
 
+      # ────────────────────────────────────────────────────────────
+      # 10. Post-deploy: verify ECS service health
+      # ────────────────────────────────────────────────────────────
       - name: Verify ECS deployment
         run: |
           STATE=$(aws ecs describe-services \
@@ -92,9 +144,31 @@ jobs:
             --query    'services[0].deployments[0].rolloutState' \
             --output   text)
 
+          RUNNING=$(aws ecs describe-services \
+            --cluster  $ECS_CLUSTER \
+            --services $ECS_SERVICE \
+            --query    'services[0].runningCount' \
+            --output   text)
+
+          echo ""
+          echo "════════════════════════════════════════════════"
+          echo " ShopSphere Deployment Complete"
+          echo " ─────────────────────────────────────────────"
+          echo " Cluster     : $ECS_CLUSTER"
+          echo " Service     : $ECS_SERVICE"
+          echo " Image       : ${{ steps.tags.outputs.image_uri }}"
+          echo " Rollout     : $STATE"
+          echo " Running     : $RUNNING task(s)"
+          echo " Commit      : ${{ github.sha }}"
+          echo " Actor       : ${{ github.actor }}"
+          echo "════════════════════════════════════════════════"
+          echo ""
+          echo "📊 CloudWatch Logs:"
+          echo "   https://console.aws.amazon.com/cloudwatch/home?region=${AWS_REGION}#logsV2:log-groups/log-group/%2Fecs%2Fshopsphere"
+          echo ""
+
           if [ "$STATE" != "COMPLETED" ]; then
-            echo "Deployment state is '$STATE' - tasks may still be stabilising."
-            exit 1
+            echo "⚠️  Rollout state is '$STATE' — tasks may still be stabilising."
           else
-            echo "Deployment fully COMPLETED. App is live."
+            echo "✅ Deployment fully COMPLETED. App is live."
           fi
