@@ -29,7 +29,7 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      const { data } = await axios.post('http://localhost:5001/api/auth/register', formData);
+      const { data } = await axios.post(import.meta.env.VITE_API_URL + '/auth/register', formData);
       dispatch(setCredentials(data));
       toast.success('Welcome to ShopSphere!', {
         style: { borderRadius: '12px', background: '#10B981', color: '#fff', fontSize: '12px', fontWeight: 'bold' }

@@ -18,7 +18,7 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const { items } = useSelector((state) => state.cart);
 
-  const API_URL = 'http://localhost:5001/api';
+  const API_URL = import.meta.env.VITE_API_URL + '';
 
   useEffect(() => {
     const fetchData = async () => {

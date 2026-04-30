@@ -25,9 +25,9 @@ axios.interceptors.request.use((config) => {
     localStorage.removeItem('user');
   }
   
-  if (config.url && config.url.startsWith('http://localhost:5001/api')) {
-    const baseUrl = import.meta.env.VITE_API_URL || 'http://localhost:5001/api';
-    config.url = config.url.replace('http://localhost:5001/api', baseUrl);
+  if (config.url && config.url.startsWith(import.meta.env.VITE_API_URL + '')) {
+    const baseUrl = import.meta.env.VITE_API_URL || import.meta.env.VITE_API_URL + '';
+    config.url = config.url.replace(import.meta.env.VITE_API_URL + '', baseUrl);
   }
   return config;
 });

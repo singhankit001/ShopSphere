@@ -101,7 +101,7 @@ const Checkout = () => {
       if (user?.token) {
         try {
           const { data } = await axios.post(
-            'http://localhost:5001/api/orders',
+            import.meta.env.VITE_API_URL + '/orders',
             {
               items: order.items.map(({ product, ...item }) => ({
                 ...item,

@@ -16,7 +16,7 @@ const Orders = () => {
     const fetchOrders = async () => {
       if (user?.token) {
         try {
-          const { data } = await axios.get('http://localhost:5001/api/orders/myorders', {
+          const { data } = await axios.get(import.meta.env.VITE_API_URL + '/orders/myorders', {
             headers: { Authorization: `Bearer ${user.token}` }
           });
           data.forEach((order) => upsertStoredOrder(order));

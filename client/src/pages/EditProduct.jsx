@@ -37,8 +37,8 @@ const EditProduct = () => {
       try {
         setFetching(true);
         const [prodRes, catRes] = await Promise.all([
-          axios.get(`http://localhost:5001/api/products/${id}`),
-          axios.get('http://localhost:5001/api/categories')
+          axios.get(`${import.meta.env.VITE_API_URL}/products/${id}`),
+          axios.get(import.meta.env.VITE_API_URL + '/categories')
         ]);
         
         const prod = prodRes.data;
@@ -78,7 +78,7 @@ const EditProduct = () => {
           Authorization: `Bearer ${user.token}`,
         },
       };
-      await axios.put(`http://localhost:5001/api/products/${id}`, formData, config);
+      await axios.put(`${import.meta.env.VITE_API_URL}/products/${id}`, formData, config);
       toast.success('SKU updated successfully!', {
         style: { borderRadius: '12px', background: '#10B981', color: '#fff', fontSize: '12px', fontWeight: 'bold' }
       });

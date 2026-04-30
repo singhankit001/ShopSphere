@@ -33,7 +33,7 @@ const AddProduct = () => {
 
     const fetchCategories = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5001/api/categories');
+        const { data } = await axios.get(import.meta.env.VITE_API_URL + '/categories');
         setCategories(data);
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -55,7 +55,7 @@ const AddProduct = () => {
           Authorization: `Bearer ${user.token}`,
         },
       };
-      await axios.post('http://localhost:5001/api/products', formData, config);
+      await axios.post(import.meta.env.VITE_API_URL + '/products', formData, config);
       toast.success('Product published to store!', {
         style: { borderRadius: '12px', background: '#10B981', color: '#fff', fontSize: '12px', fontWeight: 'bold' }
       });

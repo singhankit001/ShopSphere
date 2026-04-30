@@ -12,7 +12,7 @@ const Categories = () => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5001/api/categories');
+        const { data } = await axios.get(import.meta.env.VITE_API_URL + '/categories');
         
         const rawCategories = data || [];
         

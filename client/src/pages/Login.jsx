@@ -23,7 +23,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const { data } = await axios.post('http://localhost:5001/api/auth/login', { email, password });
+      const { data } = await axios.post(import.meta.env.VITE_API_URL + '/auth/login', { email, password });
       dispatch(setCredentials(data));
       toast.success('Welcome to ShopSphere!', {
         style: { borderRadius: '12px', background: '#10B981', color: '#fff', fontSize: '12px', fontWeight: 'bold' }
@@ -52,7 +52,7 @@ const Login = () => {
   const handleGoogleSuccess = async (credentialResponse) => {
     setLoading(true);
     try {
-      const { data } = await axios.post('http://localhost:5001/api/auth/google', { 
+      const { data } = await axios.post(import.meta.env.VITE_API_URL + '/auth/google', { 
         idToken: credentialResponse.credential 
       });
       dispatch(setCredentials(data));
@@ -145,14 +145,18 @@ const Login = () => {
                       <div className="h-[1px] flex-1 bg-slate-100"></div>
                    </div>
                    <div className="flex justify-center">
-                      <GoogleLogin
-                        onSuccess={handleGoogleSuccess}
-                        onError={() => toast.error('Google Auth Failed')}
-                        theme="outline"
-                        size="large"
-                        shape="pill"
-                        width="100%"
-                      />
+                      {(import.meta.env.VITE_GOOGLE_CLIENT_ID && import.meta.env.VITE_GOOGLE_CLIENT_ID.length > 10 && !import.meta.env.VITE_GOOGLE_CLIENT_ID.startsWith('YOUR_')) ? (
+                        <GoogleLogin
+                          onSuccess={handleGoogleSuccess}
+                          onError={() => toast.error('Google Auth Failed')}
+                          theme="outline"
+                          size="large"
+                          shape="pill"
+                          width="100%"
+                        />
+                      ) : (
+                        <div className="text-[10px] text-slate-400 uppercase tracking-widest font-bold">Google Login Disabled</div>
+                      )}
                    </div>
                 </div>
 

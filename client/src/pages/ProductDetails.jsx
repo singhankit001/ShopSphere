@@ -25,7 +25,7 @@ const ProductDetails = () => {
     // If it's an external URL
     if (img.startsWith('http')) return img;
     // Otherwise it might be a relative path from the server
-    const API_URL = 'http://localhost:5001';
+    const API_URL = import.meta.env.VITE_API_URL + '';
     return `${API_URL}${img}`;
   };
 
@@ -43,13 +43,13 @@ const ProductDetails = () => {
       try {
         setLoading(true);
         // Supports both ID and Slug
-        const { data } = await axios.get(`http://localhost:5001/api/products/${id}`);
+        const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/products/${id}`);
         setProduct(data);
         
         // Fetch similar products from the same category
         const catId = data.category?._id || data.category;
         if (catId) {
-          const simRes = await axios.get(`http://localhost:5001/api/products?category=${catId}&limit=5`);
+          const simRes = await axios.get(`${import.meta.env.VITE_API_URL}/products?category=${catId}&limit=5`);
           setSimilarProducts(simRes.data.products?.filter(p => p._id !== data._id).slice(0, 4) || []);
         }
       } catch (error) {

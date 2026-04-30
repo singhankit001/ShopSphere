@@ -5,7 +5,7 @@ import { products as fallbackProducts } from '../../data/shopData';
 
 export const fetchProducts = createAsyncThunk('products/fetchProducts', async (search = '') => {
   try {
-    const { data } = await axios.get(`http://localhost:5001/api/products${search}`);
+    const { data } = await axios.get(`${import.meta.env.VITE_API_URL}/products${search}`);
     return data.products || data || fallbackProducts;
   } catch (error) {
     console.error("API failed, using fallback products", error);

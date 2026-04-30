@@ -38,7 +38,7 @@ const Products = () => {
   useEffect(() => {
     const fetchInitialData = async () => {
       try {
-        const { data } = await axios.get('http://localhost:5001/api/categories');
+        const { data } = await axios.get(import.meta.env.VITE_API_URL + '/categories');
         const rawCategories = data || [];
         const uniqueCategoriesMap = new Map();
         
@@ -82,7 +82,7 @@ const Products = () => {
         setPage(urlPage);
 
         const activeSlug = urlCategory;
-        const baseUrl = 'http://localhost:5001/api/products';
+        const baseUrl = import.meta.env.VITE_API_URL + '/products';
         const apiParams = new URLSearchParams();
         apiParams.set('page', urlPage);
         apiParams.set('limit', 20);

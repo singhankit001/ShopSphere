@@ -13,7 +13,7 @@ const ProductCard = ({ product }) => {
   const productId = product._id || product.id;
   const cartItem = productId ? items.find(item => (item._id || item.id) === productId) : null;
   const quantity = cartItem ? cartItem.quantity : 0;
-  const API_URL = 'http://localhost:5001';
+  const API_URL = import.meta.env.VITE_API_URL + '';
 
   const handleAddToCart = (e) => {
     e.preventDefault();
@@ -45,7 +45,7 @@ const ProductCard = ({ product }) => {
     // If it's an external URL
     if (img.startsWith('http')) return img;
     // Otherwise it might be a relative path from the server
-    const API_URL = 'http://localhost:5001';
+    const API_URL = import.meta.env.VITE_API_URL + '';
     return `${API_URL}${img}`;
   };
 

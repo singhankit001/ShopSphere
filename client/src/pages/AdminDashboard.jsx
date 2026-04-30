@@ -54,8 +54,8 @@ const AdminDashboard = () => {
     const loadAdminData = async () => {
       try {
         const [orderRes, productRes] = await Promise.allSettled([
-          axios.get('http://localhost:5001/api/orders', { headers: { Authorization: `Bearer ${user.token}` } }),
-          axios.get('http://localhost:5001/api/products')
+          axios.get(import.meta.env.VITE_API_URL + '/orders', { headers: { Authorization: `Bearer ${user.token}` } }),
+          axios.get(import.meta.env.VITE_API_URL + '/products')
         ]);
         if (orderRes.status === 'fulfilled') {
           orderRes.value.data.forEach((order) => upsertStoredOrder(order));
@@ -117,7 +117,7 @@ const AdminDashboard = () => {
     setOrders(nextOrders);
     if (user?.token && !String(order._id).startsWith('local-')) {
       try {
-        await axios.put(`http://localhost:5001/api/orders/${order._id}`, { status }, { headers: { Authorization: `Bearer ${user.token}` } });
+        await axios.put(`${import.meta.env.VITE_API_URL}/orders/${order._id}`, { status }, { headers: { Authorization: `Bearer ${user.token}` } });
         toast.success(`Order ${status}`);
       } catch {
         toast('Status saved locally.');
